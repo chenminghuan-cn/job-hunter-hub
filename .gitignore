@@ -1,0 +1,17 @@
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
+data/*.db
+data/*.db-wal
+data/*.db-shm
+.DS_Store
+__pycache__/
+*.pyc
+data/admin_password.txt
+data/mail.json
+data/session_secret
+mail-worker/node_modules/
+data/uploads/
+.wrangler/
+data/logs/
+data/.last_sweep

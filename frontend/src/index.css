@@ -1,0 +1,12 @@
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: #f5f6fa;
+  -webkit-font-smoothing: antialiased;
+}
+.ant-table-cell { font-size: 13px; }
+.ant-table-thead > tr > th { font-weight: 600; }
+.clickable-row { cursor: pointer; }
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+.kpi-value { font-size: 26px; font-weight: 650; letter-spacing: -0.5px; }
