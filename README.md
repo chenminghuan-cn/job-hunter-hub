@@ -1,10 +1,39 @@
-# 应聘中台 · Job Hunter Hub
+<div align="center">
 
-个人求职中台：**Agent 负责采集，中台负责沉淀和推进状态，你只做决策。**
+<img src="frontend/public/favicon.svg" width="76" height="76" alt="Job Hunter Hub" />
 
-- 前端：React 18 + Ant Design 5 + Vite
-- 后端：Python + FastAPI + SQLite（零外部服务）
-- 外放接口：A2A JSON-RPC + 每 Agent 独立 HMAC 签名 + 按 Agent 划分工具权限
+<h1>应聘中台 · Job Hunter Hub</h1>
+
+<p><b>Agent 去采集，中台来沉淀，你只做决策。</b></p>
+
+<p>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT"></a>
+  <img src="https://img.shields.io/badge/python-3.12-3776AB?logo=python&logoColor=white" alt="python">
+  <img src="https://img.shields.io/badge/react-18-61DAFB?logo=react&logoColor=white" alt="react">
+  <img src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" alt="fastapi">
+  <img src="https://img.shields.io/badge/协议-A2A%20JSON--RPC-6d5ae6" alt="A2A">
+</p>
+
+<p>
+把猎聘 / BOSS / 领英 / 小红书 / X / 脉脉 / 即刻 / 公众号上散落的招聘信息，<br>
+交给你自己的 Agent 采进来；中台负责幂等入库、状态机、JD 预审、简历定制，一路推进到 offer。
+</p>
+
+</div>
+
+| | |
+|---|---|
+| **数据看板** —— 漏斗、渠道来源、待办、采集流水<br><img src="docs/screenshots/dashboard.png" width="880"> | **岗位列表** —— 状态机一键推进、标签、在招时长、评估结论<br><img src="docs/screenshots/jobs.png" width="880"> |
+| **JD 匹配评估** —— 按 job-match 口径：结论 + 要求·证据矩阵 + 硬门槛 + 补强建议<br><img src="docs/screenshots/job-fit.png" width="880"> | **简历定制** —— 针对岗位改写、改动处高亮浏览、下载无高亮的 PDF<br><img src="docs/screenshots/resume.png" width="880"> |
+| **信息源** —— 每个渠道独立状态机（人工验证 / 登录失效 / 限流）<br><img src="docs/screenshots/channels.png" width="880"> | **连接设置** —— 按 Agent 发密钥、限权限、配提示词与任务配置<br><img src="docs/screenshots/agent-config.png" width="880"> |
+
+## 它解决什么问题
+
+- **采集侧不稳定就不要耦合进来**：Agent 只往外发 HTTPS，中台不依赖任何反爬框架；渠道加一行就能接。
+- **数据要能沉淀**：`channel + source_job_id` 幂等入库，重复上报只更新；在招时长、疑似下架、已下架由服务端自己算。
+- **状态和口径只在一处**：岗位 / 公司 / 联系人 / 渠道四套状态机是唯一真相源，页面点和接口调用走同一套校验。
+- **预审交出去**：分析 Agent 按 `job-match` 拆 JD、对证据、给结论，每处判断都留理由进操作日志。
+- **能力渐进披露**：Agent 不需要你口头教——复制一段接入说明，它自己调 `agent.capabilities` 问清楚能干什么。
 
 ---
 
@@ -33,8 +62,9 @@ backend/
   state.py      状态机唯一真相源
   db.py         建表 / 默认渠道 / 默认 Agent / 示例数据
   test_smoke.py 自检：python test_smoke.py
+docs/screenshots/  README 用的界面截图（示例数据）
 frontend/
-  src/pages/    Dashboard · Jobs · Companies · Contacts · Channels · Settings
+  src/pages/    Dashboard · Jobs · Companies · Contacts · Resume · Reports · Channels · Settings
   src/channelNotes.js  各渠道字段差异调研笔记
   public/logos/ 官方 logo（本地化，避免外链失效）
 mail-worker/    只做发信的 Cloudflare Worker（send_email 绑定，HMAC 校验）
@@ -221,6 +251,9 @@ POST /a2a → tool: resume.submit
 - 文件名自动规范为 `<姓名>_岗位方向_公司_YYYYMMDD.pdf`（`JOBHUB_OWNER_NAME` 控制前缀），存 `data/uploads/resumes/`
 - PDF 用本机 Chrome 无头模式渲染（`--print-to-pdf`，A4、去页眉页脚）；可用 `JOBHUB_CHROME` 指定浏览器路径
 - 页面上能看改动清单（原文 → 现在 → 为什么），也能删除版本
+- 岗位抽屉里也有一份：`详情 | 匹配评估 | 简历 | 操作日志`，看岗位时顺手看这版简历
+
+<img src="docs/screenshots/job-resume.png" width="880">
 
 ## 信源上报（采集 Agent → 中台）
 
