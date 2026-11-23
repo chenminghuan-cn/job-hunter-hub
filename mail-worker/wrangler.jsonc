@@ -5,5 +5,7 @@
   "compatibility_date": "2025-11-28",
   "observability": { "enabled": true },
   "send_email": [{ "name": "EMAIL", "remote": true }],
-  "routes": [{ "pattern": "mailer.chenminghuan.com", "custom_domain": true }]
+  // 部署后给这个 Worker 绑一个自定义域名（workers.dev 在部分网络环境不可达）：
+  //   "routes": [{ "pattern": "mailer.<your-domain>", "custom_domain": true }]
+  "routes": []
 }

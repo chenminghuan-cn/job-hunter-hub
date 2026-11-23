@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # 把本机 8010 暴露成 Cloudflare 二级域名（需要先 cloudflared tunnel login 授权过域名）
-# 用法: ./deploy/tunnel.sh [子域名] [主域名] [隧道名]   默认 jobs chenminghuan.com jobhub
+# 用法: ./deploy/tunnel.sh [子域名] [主域名] [隧道名]   例：./deploy/tunnel.sh jobs your-domain.com jobhub
 set -e
 SUB="${1:-jobs}"
-DOMAIN="${2:-chenminghuan.com}"
+DOMAIN="${2:?用法: ./deploy/tunnel.sh <子域名> <主域名> [隧道名]}"
 NAME="${3:-jobhub}"
 HOSTNAME_FULL="$SUB.$DOMAIN"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -27,7 +27,7 @@ ingress:
   - service: http_status:404
 CFG
 
-LABEL="com.chenminghuan.jobhub-tunnel"
+LABEL="${JOBHUB_LABEL:-com.jobhub.app}-tunnel"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 mkdir -p "$ROOT/data/logs"
 cat > "$PLIST" <<PLIST_EOF

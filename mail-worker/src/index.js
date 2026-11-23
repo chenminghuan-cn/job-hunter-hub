@@ -1,5 +1,5 @@
 /**
- * jobhub-mailer：只干一件事 —— 校验 HMAC 后，用 Cloudflare send_email 从 jobs@chenminghuan.com 发信。
+ * jobhub-mailer：只干一件事 —— 校验 HMAC 后，用 Cloudflare send_email 从你的域名邮箱发信。
  * 中台后端调用它，避免在 Python 里存 SMTP 密码，也用正常渠道投递（不易进垃圾箱）。
  */
 const enc = new TextEncoder()
@@ -35,7 +35,7 @@ export default {
 
     try {
       const res = await env.EMAIL.send({
-        from: p.from || 'jobs@chenminghuan.com',
+        from: p.from || 'noreply@example.com',
         to,
         subject,
         html: p.html || '<p></p>',

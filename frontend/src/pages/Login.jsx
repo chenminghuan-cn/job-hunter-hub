@@ -6,7 +6,7 @@ import { post } from '../api'
 export default function Login({ onSuccess }) {
   const { message } = App.useApp()
   const [step, setStep] = useState('email')
-  const [email, setEmail] = useState('me@chenminghuan.com')
+  const [email, setEmail] = useState('')
   const [sending, setSending] = useState(false)
   const [verifying, setVerifying] = useState(false)
   const [left, setLeft] = useState(0)
@@ -84,7 +84,7 @@ export default function Login({ onSuccess }) {
               <Form layout="vertical" onFinish={({ email: e }) => send(e)} initialValues={{ email }}>
                 <Form.Item name="email" label="邮箱"
                            rules={[{ required: true, type: 'email', message: '请输入正确的邮箱' }]}>
-                  <Input size="large" prefix={<MailOutlined style={{ color: '#98a2b3' }} />} placeholder="me@chenminghuan.com" />
+                  <Input size="large" prefix={<MailOutlined style={{ color: '#98a2b3' }} />} placeholder="you@example.com" />
                 </Form.Item>
                 <Button type="primary" htmlType="submit" size="large" block loading={sending}>
                   发送验证码

@@ -286,17 +286,18 @@ def main():
         assert service.list_jobs(c, fit="apply_after_gap")["total"] >= 1
 
         # --- 简历定制（命名 + 去 mark + 入库） ---
+        os.environ.pop("JOBHUB_OWNER_NAME", None)
         assert service.build_resume_filename("AI应用工程师", "字节跳动", "2026-11-21 10:00:00") == \
-            "陈明欢_AI应用工程师_字节跳动_20261121"
+            "AI应用工程师_字节跳动_20261121"
         assert service.strip_marks('<p><mark data-why="x">重点</mark>普通</p>') == '<p>重点普通</p>'
-        html = ("<!doctype html><html><body><h1>陈明欢</h1>"
+        html = ("<!doctype html><html><body><h1>示例候选人</h1>"
                 "<p><mark data-why=\"个岗定制\">近 2 个月单人完成 Agent 中台 0→1</mark></p>"
                 + "<p>技能：Node/Python</p>" * 12 + "</body></html>")
         rr = service.create_resume(c, {"job_id": jid, "role": "AI应用工程师", "company": "测试公司",
                                        "html": html,
                                        "changes": [{"where": "简介", "after": "强调 0→1", "why": "JD 要求"}]},
                                    "test")
-        assert rr["resume"]["filename"].startswith("陈明欢_AI应用工程师_测试公司_")
+        assert rr["resume"]["filename"].startswith("AI应用工程师_测试公司_")
         assert len(rr["resume"]["changes"]) == 1
         assert service.list_resumes(c)[0]["id"] == rr["resume"]["id"]
         # 回读全文 + diff + 基准简历

@@ -6,7 +6,7 @@
 
 
 def onboarding_text(agent_row, base_url) -> str:
-    base = (base_url or "https://jobs.chenminghuan.com").rstrip("/")
+    base = (base_url or "https://your-jobhub.example.com").rstrip("/")
     return f"""# 应聘中台 · Agent 接入说明
 
 你是接入「应聘中台」的 Agent。中台在你这侧只需要**出站 HTTPS**，不需要任何入站端口。

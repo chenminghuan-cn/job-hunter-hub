@@ -1,7 +1,7 @@
 """邮箱验证码登录：6 位码 + HttpOnly 签名 Cookie 会话。
 
 发信走可插拔的 mailer（data/mail.json 或环境变量）：
-  mode=worker  POST 到自建的小 Worker，由 Cloudflare send_email 从 jobs@chenminghuan.com 发出
+  mode=worker  POST 到自建的小 Worker，由 Cloudflare send_email 从你的域名邮箱发出
   mode=smtp    常规 SMTP（有邮箱密码时用）
   mode=log     不真发，验证码只写本地日志（仅限本机调试，读过日志的人才能登录）
 """
@@ -37,12 +37,12 @@ def _env(key, default=None):
 
 
 def allowed_emails() -> set:
-    raw = _env("JOBHUB_ALLOWED_EMAILS", "me@chenminghuan.com")
+    raw = _env("JOBHUB_ALLOWED_EMAILS", "admin@example.com")
     return {e.strip().lower() for e in raw.split(",") if e.strip()}
 
 
 def mail_from() -> str:
-    return _env("JOBHUB_MAIL_FROM", "jobs@chenminghuan.com")
+    return _env("JOBHUB_MAIL_FROM", "noreply@example.com")
 
 
 def mail_config() -> dict:

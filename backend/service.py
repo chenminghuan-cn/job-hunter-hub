@@ -761,9 +761,11 @@ def _slug(t: str, limit: int = 20) -> str:
 
 
 def build_resume_filename(role: str, company: str, when: str | None = None) -> str:
-    """规范命名：陈明欢_岗位方向_公司_YYYYMMDD"""
+    """规范命名：<姓名>_岗位方向_公司_YYYYMMDD（姓名取 JOBHUB_OWNER_NAME，可留空）"""
     d = (when or now())[:10].replace("-", "")
-    return f"陈明欢_{_slug(role)}_{_slug(company)}_{d}"
+    prefix = (os.environ.get("JOBHUB_OWNER_NAME") or "").strip()
+    parts = [p for p in (prefix, _slug(role), _slug(company), d) if p]
+    return "_".join(parts)
 
 
 MARK_RE = re.compile(r"</?mark\b[^>]*>")

@@ -218,8 +218,8 @@ POST /a2a → tool: resume.submit
 ```
 
 - 改动处用 `<mark data-why="为什么改">…</mark>` 包住 → 浏览版高亮，生成 PDF 时 `strip_marks()` 去掉
-- 文件名自动规范为 `陈明欢_岗位方向_公司_YYYYMMDD.pdf`，存 `data/uploads/resumes/`
-- PDF 用本机 Chrome 无头模式渲染（`--print-to-pdf`，A4、去页眉页脚）；可用 `JOBHUB_CHROME` 指定浏览器
+- 文件名自动规范为 `<姓名>_岗位方向_公司_YYYYMMDD.pdf`（`JOBHUB_OWNER_NAME` 控制前缀），存 `data/uploads/resumes/`
+- PDF 用本机 Chrome 无头模式渲染（`--print-to-pdf`，A4、去页眉页脚）；可用 `JOBHUB_CHROME` 指定浏览器路径
 - 页面上能看改动清单（原文 → 现在 → 为什么），也能删除版本
 
 ## 信源上报（采集 Agent → 中台）
@@ -271,45 +271,68 @@ tool: agent.capabilities
 2. 采集 Agent 用这个 `code` 直接调 `job.upsert` 即可，**不用改后端代码**。
 3. 渠道有特殊字段就塞 `extra`，把原始响应塞 `raw`。
 
-## 已部署（公网）
+## 部署（可选，公网自用）
 
-- 地址：**https://jobs.chenminghuan.com**（独立进程 + 独立 SQLite，与 chenminghuan.com 静态站互不影响）
-- 登录：**邮箱验证码**。只放行 `me@chenminghuan.com`（`JOBHUB_ALLOWED_EMAILS` 可改），
-  发件人 `jobs@chenminghuan.com`，验证码 6 位 / 10 分钟 / 单码最多试 5 次 / 60 秒内不可重发，登录态是 30 天的 HttpOnly Cookie。
-- 链路：Cloudflare Tunnel → `127.0.0.1:8010`，两个 launchd 常驻服务（开机自启 / 崩溃拉起）：
+默认只在本机跑就够用；想让外面（或手机）访问，推荐 **Cloudflare Tunnel**：机器上不用开端口，也不改路由器。
+
+### 1. 登录模板
+
+- 只放行白名单邮箱：`JOBHUB_ALLOWED_EMAILS=you@example.com`
+- 发件人：`JOBHUB_MAIL_FROM=noreply@example.com`
+- 验证码 6 位 / 10 分钟 / 单码最多试 5 次 / 60 秒内不可重发；登录态是 30 天 HttpOnly Cookie
+
+### 2. 常驻 + 隧道（macOS launchd）
 
 ```bash
-launchctl list | grep jobhub          # com.chenminghuan.jobhub（应用）/ -tunnel（隧道）
+./deploy/macos-service.sh                        # 中台常驻 127.0.0.1:8010（JOBHUB_LABEL 可改服务名）
+cloudflared tunnel login                         # 浏览器授权一次
+./deploy/tunnel.sh jobs your-domain.com jobhub   # 建隧道 + 绑 jobs.your-domain.com
+```
+
+```bash
+launchctl list | grep jobhub                     # 应用 / 隧道两个服务
 tail -f data/logs/app.log data/logs/tunnel.err.log
 ```
 
-- 重新部署 / 换机器：
+没有 Cloudflare 也能跑：`cloudflared tunnel --url http://127.0.0.1:8010` 拿一个临时域名，或用任意反代指向 8010。
 
-```bash
-./deploy/macos-service.sh                      # 中台常驻到 127.0.0.1:8010
-./deploy/tunnel.sh jobs chenminghuan.com jobhub  # 隧道 + DNS（需先 cloudflared tunnel login）
-```
+### 3. 发信通道
 
-### 发信通道
-
-`data/mail.json`（chmod 600，不进 git）：
+登录验证码需要发信，三种模式（写在 `data/mail.json`，chmod 600，不进 git；同名环境变量优先）：
 
 ```json
-{ "mode": "worker", "worker_url": "https://mailer.chenminghuan.com", "worker_secret": "..." }
+{ "mode": "worker", "worker_url": "https://mailer.your-domain.com", "worker_secret": "..." }
 ```
 
-`mail-worker/` 是一个只做发信的小 Worker（Cloudflare `send_email` 绑定），后端用 HMAC 签名调它：
-不把 SMTP 密码放在 Python 里，也不经过第三方邮件服务。改发信方式只改这个文件，`mode` 支持
-`worker` / `smtp`（需要 `JOBHUB_SMTP_*`）/ `log`（只写日志，本机调试用）。mailer 的对外地址是 `https://mailer.chenminghuan.com`
-（workers.dev 域名在国内会 DNS 污染，必须走自定义域名）。
+| mode | 说明 |
+|---|---|
+| `worker` | 本仓库 `mail-worker/` 那个小 Worker，走 Cloudflare `send_email` 绑定，不存 SMTP 密码 |
+| `smtp` | 常规 SMTP，需要 `JOBHUB_SMTP_HOST/PORT/USER/PASS` |
+| `log` | 不发信，验证码只写服务日志（本机调试用） |
 
-重新部署 mailer：
+部署 mailer：
 
 ```bash
-cd mail-worker && npm i && npx wrangler deploy
-printf '%s' '<新的 secret>' | npx wrangler secret put MAIL_SECRET
-# 然后把新 secret 同步进 data/mail.json
+cd mail-worker && npm i && npx wrangler deploy          # 默认给 <name>.<account>.workers.dev
+printf '%s' '<secret>' | npx wrangler secret put MAIL_SECRET
+# 建议在 wrangler.jsonc 里给 Worker 绑自定义域名（部分网络访问 workers.dev 会失败）
+# 然后把 worker_url / worker_secret 写进 data/mail.json
 ```
+
+### 4. 环境变量一览
+
+| 变量 | 作用 | 默认 |
+|---|---|---|
+| `RECRUIT_DB` | SQLite 路径 | `data/recruit.db` |
+| `JOBHUB_ALLOWED_EMAILS` | 允许登录的邮箱，逗号分隔 | `admin@example.com` |
+| `JOBHUB_MAIL_FROM` | 验证码发件人 | `noreply@example.com` |
+| `JOBHUB_MAIL_MODE` / `JOBHUB_MAIL_WORKER_URL` / `JOBHUB_MAIL_WORKER_SECRET` | 发信方式 | 读 `data/mail.json` |
+| `JOBHUB_SMTP_HOST/PORT/USER/PASS` | SMTP 模式参数 | - |
+| `JOBHUB_OWNER_NAME` | 定制简历文件名前缀（`<姓名>_岗位方向_公司_日期.pdf`） | 空 |
+| `JOBHUB_CHROME` | 渲染 PDF 用的浏览器 | macOS 的 Google Chrome |
+| `JOBHUB_STALE_DAYS` / `JOBHUB_GONE_DAYS` | 岗位多久没再采到算疑似下架 / 已下架 | 7 / 21 |
+| `JOBHUB_KEEP_IMAGES` | 每个岗位保留几张截图 | 1 |
+| `JOBHUB_SEED_DEMO` | 设为 1 时写入示例数据 | 不开 |
 
 ### Agent 的任务提示词与配置
 
@@ -348,3 +371,7 @@ printf '%s' '<新的 secret>' | npx wrangler secret put MAIL_SECRET
 - A2A 同步返回，不做流式与 push notification（`agent-card` 里已声明）。
 - SQLite 单机，够用到几十万岗位；真需要并发再换 Postgres（`service.py` 是唯一要改的地方）。
 - `ping`/日志/监控都没做，本地工具不需要；要上云再加。
+
+## License
+
+MIT，见 [LICENSE](LICENSE)。
